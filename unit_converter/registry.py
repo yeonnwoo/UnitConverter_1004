@@ -16,5 +16,8 @@ class UnitRegistry:
     def get(self, name: str) -> float:
         return self._units[name]
 
+    def register(self, name: str, meters_per_unit: float) -> None:
+        self._units[name] = meters_per_unit
+
     def all_units(self) -> dict[str, float]:
         return dict(self._units)
