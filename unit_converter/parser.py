@@ -5,3 +5,11 @@ Does not know conversion rates or output formats.
 
 Maps to: FR-01, FR-04, FR-05
 """
+
+from unit_converter.models import ParsedInput
+
+
+class Parser:
+    def parse(self, raw: str) -> ParsedInput:
+        unit, value_str = raw.split(":", maxsplit=1)
+        return ParsedInput(unit=unit, value=float(value_str))
