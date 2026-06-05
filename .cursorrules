@@ -1,0 +1,223 @@
+# UnitConverter_1004 — Cursor Rules (초안)
+
+## 프로젝트 맥락
+
+- **주제:** 단위 이름을 명확히 넣었을 때만 변환하고, 틀리면 결과가 나오기 전에 바로 알 수 있게 한다.
+- **진짜 문제:** 단위 이름 혼동 → 잘못된 결과 → 뒤늦은 재확인·재계산.
+- **산출물:** `python -m unit_converter "meter:2.5"` CLI (길이 단위만).
+
+### 근거 문서 (우선순위)
+
+1. `docs/PRD.md` — FR/NFR/EXT 요구사항
+2. `docs/DESIGN.md` — 패키지 구조·컴포넌트 책임
+3. `docs/WORKBOOK.md` — Rule · Command · Test Loop
+4. `Report/UnitConverter_1004_ProblemDefinition_Report.md` — Mom Test · R-G-I-O · 성공 기준
+
+문서와 코드가 충돌하면 **문서를 먼저 확인**하고, 필요 시 문서 갱신을 제안한다.
+
+---
+
+## 아키텍처 (필수)
+
+### SRP (NFR-02) — 모듈별 단일 책임
+
+| 모듈 | 책임 | 금지 |
+|------|------|------|
+| `parser.py` | `unit:value` 파싱·검증 | 환산율, 출력 형식 |
+| `registry.py` | 단위 등록·조회 (meter 대비 비율) | 파싱, 출력 |
+| `converter.py` | meter 허브 경유 환산 | 파싱, 출력, 단위 등록 |
+| `printer/` | 결과 직렬화 (table/json/csv) | 환산, 단위 등록 |
+| `config/loader.py` | JSON/YAML 로드 | CLI, 출력 |
+| `cli.py` | 인자 처리·컴포넌트 조합 | 각 컴포넌트 내부 로직 |
+
+### OCP (NFR-01)
+
+- 새 단위: `registry.register()` 또는 `units.json` 추가만. **`converter.py` 수정 금지.**
+- 새 출력 포맷: `printer/`에 Protocol 구현 추가 + 팩토리 등록만.
+- `Converter`는 `Registry` 인터페이스에만 의존한다.
+
+### 의존 방향
+
+```
+CLI → Parser, Registry ← ConfigLoader, Converter(Registry), Printer
+```
+
+---
+
+## 도메인 규칙
+
+- 입력 형식: `단위이름:숫자` (예: `meter:2.5`)
+- 값: 0 이상. 음수 → `NegativeValueError` (FR-04)
+- 미등록 단위 → `UnknownUnitError` (FR-03)
+- 형식 오류 → `InvalidFormatError` (FR-05)
+- 환산 허브: **meter**. feet ↔ yard도 meter 경유 (R-04)
+- 기본 단위: meter(1.0), feet(0.3048), yard(0.9144)
+
+---
+
+## TDD / ARRR (필수)
+
+1. **RED** — 실패하는 테스트 1개 먼저 (Given / When / Then)
+2. **GREEN** — 통과에 필요한 최소 코드만
+3. **REFACTOR** — SRP/OCP 유지, 기존 테스트 깨지지 않게
+
+### 1사이클 1요구
+
+- ARRR 1사이클 = FR 1개 (또는 밀접한 1쌍). 여러 FR을 한 번에 구현하지 않는다.
+- 권장 순서: FR-01 → FR-04 → FR-05 → FR-03 → FR-02 → printer → NFR
+
+### 테스트·커밋 추적
+
+- 테스트 함수명에 요구 ID 포함: `test_parser_fr01_valid_input`
+- 커밋 메시지에 FR/NFR/SC ID 명시
+
+### 검증 명령
+
+```bash
+pytest tests/test_parser.py -v   # 모듈별
+pytest                           # 전체
+python -m unit_converter "meter:2.5"
+```
+
+---
+
+## 우선순위
+
+- **P0 (먼저):** FR-01~05, NFR-01~02, SC-01~03
+- **P1 (P0 이후):** EXT-01 (config), EXT-02 (동적 등록), EXT-03 (`--format`)
+
+P0 미완료 상태에서 P1 선구현 금지.
+
+---
+
+## 하지 않을 것
+
+- GUI·모바일·범용 계산기
+- 질량·온도 등 길이 외 물리량
+- Mom Test 증거 없는 부가 기능 (히스토리, 즐겨찾기 등)
+- 한 모듈에 파싱+환산+출력 혼합
+- 테스트 없이 구현만 추가
+- 요구사항 범위 밖 단위 선구현 (P1 Registry/OCP로 확장)
+
+---
+
+## 코드 스타일
+
+- Python 3.10+ 타입 힌트 사용
+- 도메인 객체: `models.py` (`ParsedInput`, `ConversionResult`)
+- 예외: `errors.py` — `UnitConverterError` 하위로 구분
+- 주석은 비자명한 비즈니스 로직에만. docstring으로 모듈 책임 명시
+- 기존 패키지 구조·네이밍 유지. 불필요한 추상화·헬퍼 추가 지양
+
+---
+
+## 성공 기준 (구현 완료 판정)
+
+| ID | 판정 |
+|----|------|
+| SC-01 | `cubit:1` → 즉시 오류, 변환 결과 없음 |
+| SC-02 | `meter:-1`, `meter / abc` → 거부 |
+| SC-03 | `meter:2.5` → feet, yard 등 전체 출력, 대조 가능 |
+
+---
+
+## R-G-I-O (구현 판단 기준)
+
+| | |
+|---|---|
+| **Input** | `단위이름:숫자` (예: `meter:2.5`) |
+| **Output** | 소스 **제외** 등록 단위 전체 환산. 기본 table. 오류 시 원인별 메시지 |
+| **Goal** | 잘못된 이름·형식은 변환 전 거부. 올바른 입력은 한 번에 대조 가능한 전체 결과 |
+
+---
+
+## 오류 메시지 (R-08)
+
+- 형식·음수·미등록 단위 오류를 **서로 다른 예외·메시지**로 구분한다.
+- 사용자가 단위 **이름을 고칠 수 있게** 원인을 명시한다.
+- 미등록 단위 오류 시 **변환 결과를 출력하지 않는다** (SC-01).
+
+| 상황 | 예외 | FR |
+|------|------|-----|
+| `meter / abc` | `InvalidFormatError` | FR-05 |
+| `meter:-1` | `NegativeValueError` | FR-04 |
+| `cubit:1` | `UnknownUnitError` | FR-03 |
+
+---
+
+## Mom Test 게이트 (기능 추가 전)
+
+구현 중 새 기능이 떠오르면 아래 3줄과 대조한다. **증거 없으면 하지 않는다.**
+
+1. 「계산기를 가장 많이 사용해」
+2. 「단위 이름」 때문에 헷갈린다
+3. 「mm를 m로 잘못 작성」→ 결과가 이상해 보일 때까지 모름
+
+---
+
+## 환산·출력 규칙
+
+- `Converter.convert_all()`: 소스 단위 **제외**, Registry의 나머지 단위로 환산 (FR-02).
+- 환산 경로: `source → meter → target` (직접 비율 곱셈 금지).
+- table 기본 출력 형식: `{value} {unit} = {converted} {target}` (예: `2.5 meter = 8.2021 feet`).
+- 소수 표시: PRD 예시 기준 **소수점 4자리** (8.2021, 2.7340).
+- 진입점: `__main__.py` → `cli.main()`. CLI는 조합만, 로직은 각 모듈.
+
+---
+
+## Protocol / 확장 (OCP)
+
+- `printer/base.py`: `Printer` Protocol — `print(source, results) -> str`
+- `config/loader.py`: `ConfigLoader` Protocol — JSON/YAML 교체 가능
+- `Converter`는 `Registry`를 **생성자/인자로 주입**받는다 (테스트·OCP).
+- 새 단위 비율은 **meter 대비** (`meters_per_unit`)로만 Registry에 저장.
+
+---
+
+## 테스트 파일 매핑 (DESIGN §8)
+
+| 파일 | 커버 |
+|------|------|
+| `tests/test_parser.py` | FR-01, FR-04, FR-05 |
+| `tests/test_registry.py` | FR-03, EXT-02, NFR-01 |
+| `tests/test_converter.py` | FR-02 (정확도, meter 경유) |
+| `tests/test_printer.py` | FR-02 출력, EXT-03 |
+| `tests/test_config_loader.py` | EXT-01 |
+| `tests/test_cli.py` | E2E, `--format`, `--config` |
+
+요구사항은 **해당 테스트 파일에만** 추가. 다른 모듈 테스트에 섞지 않는다.
+
+---
+
+## ARRR 사이클 (상세)
+
+**불편 우선:** SC-01 → SC-02 → SC-03 순으로 사이클을 잡는다.
+
+| # | RED | 모듈 | ID |
+|---|-----|------|-----|
+| 1 | `meter:2.5` 파싱 | `parser.py` | FR-01 |
+| 2 | `meter:-1` 거부 | `parser.py` | FR-04, SC-02 |
+| 3 | `meter / abc` 거부 | `parser.py` | FR-05, SC-02 |
+| 4 | `cubit:1` 미등록 | `registry.py` | FR-03, SC-01 |
+| 5 | `meter:2.5` → feet, yard | `converter.py` | FR-02, SC-03 |
+| 6 | table 출력 | `printer/table.py` | FR-02, SC-03 |
+| 7 | inch 등록, Converter 무변경 | `registry.py` | NFR-01 |
+| 8 | SRP 분리 유지 | 구조 검토 | NFR-02 |
+
+**사이클 완료 체크**
+
+- [ ] RED: 테스트 **실패** 확인
+- [ ] GREEN: **최소** 코드로 통과
+- [ ] REFACTOR: SRP/OCP 유지, 테스트 통과 유지
+- [ ] 커밋에 FR/NFR/SC ID 포함
+
+---
+
+## P1 CLI (P0 완료 후)
+
+```bash
+python -m unit_converter "meter:2.5" --format json|csv|table
+python -m unit_converter "meter:2.5" --config path/to/units.json
+```
+
+기본 설정: `unit_converter/config/units.json`
