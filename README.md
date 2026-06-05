@@ -6,7 +6,7 @@
 |---|---|
 | **작성자** | 김연우 |
 | **리뷰어** | 김명섭, 김민주, 김소민, 김정균, 김준호 |
-| **상태** | 설계 완료 · TDD 진행 예정 |
+| **상태** | spec 완료 · **TDD RED** 진행 중 |
 
 ---
 
@@ -27,7 +27,7 @@ $ python -m unit_converter "meter:2.5"
 ## 프로젝트 진행 단계
 
 ```
-Mom Test ✅ → R-G-I-O ✅ → PRD ✅ → Design ✅ → TDD (ARRR) 🔜
+Mom Test ✅ → R-G-I-O ✅ → PRD ✅ → Design ✅ → TDD RED 🔄 → GREEN → REFACTOR
 ```
 
 | 단계 | 산출물 | 경로 |
@@ -90,17 +90,81 @@ unit_converter/
 
 ---
 
-## 개발 (TDD 예정)
+## TDD — Dual-Track RED
 
-```bash
-# 테스트 (구현 후)
-pytest
+ARRR RED 단계에서 **Track(역할)** 과 **Layer(계층)** 를 분리한다.  
+동일한 C2C 추적(Rule 1~3)과 RED 설계표 형식을 쓰고, **Layer만 바꿔 재사용**한다.
 
-# CLI 실행 (구현 후)
-python -m unit_converter "meter:2.5"
+| Track | Layer | 대상 | 테스트 경로 예 |
+|-------|-------|------|----------------|
+| **B (Logic)** | entity | `Parser`, `ParsedInput` | `tests/entity/test_d_loc_01.py` |
+| **A (UI)** | boundary | `cli`, `__main__` (CLI 진입) | `tests/boundary/test_u_in_01.py` |
+
+- **Rule 1:** PRD FR ↔ Test ID 1:1 연결
+- **Rule 2:** To-Do 1개 (판단 포함)
+- **Rule 3:** Given / When / Then 명시
+- Logic Track → Domain Mock 금지 · entity emit 금지
+- RED: `pytest.fail()` 스켈레톤 · skip/xfail 금지
+
+ARRR 전체 순서: [`docs/WORKBOOK.md`](docs/WORKBOOK.md) · Skill: [`.cursor/skills/unit-converter-arr-cycle/`](.cursor/skills/unit-converter-arr-cycle/SKILL.md)
+
+---
+
+### Track A (UI) — boundary Layer
+
+```
+Phase: red | Layer: boundary | Track: UI
 ```
 
-ARRR 1사이클 순서: [`docs/WORKBOOK.md`](docs/WORKBOOK.md) § Test Loop 참고.
+| Test ID | Given | Then (Expected RED) |
+|---------|-------|----------------------|
+| U-IN-01 | `""` | 형식 오류 메시지 |
+| U-IN-02 | `meter` (콜론 없음) | 형식 오류 |
+| U-IN-03 | `meter:-1` | 음수 거부 |
+| U-OUT-01 | `meter:2.5` | 3줄 이상 출력 (스켈레톤) |
+
+```bash
+python -m pytest tests/boundary/ -v
+```
+
+---
+
+### Track B (Domain) — entity Layer
+
+```
+Phase: red | Layer: entity | Track: Logic
+```
+
+| Test ID | 함수 | Given / Then |
+|---------|------|--------------|
+| D-CNV-01 | `to_meter` | 1 feet → 0.3048 m (±ε) |
+| D-CNV-02 | `convert_all` | 2.5 m → 8.20210 ft (소수 5자리) |
+| D-CNV-03 | `convert_all` | feet → yard, meter 경유 일치 |
+| D-REG-01 | `register` | cubit 0.4572 → 변환 가능 |
+| D-CFG-01 | `load json` | 깨진 파일 → ConfigError |
+
+```bash
+python -m pytest tests/entity/test_d_cnv_01.py -v
+python -m pytest tests/entity/ -v
+```
+
+> Track A = 입력·출력 경계. Track B = 환산·등록·설정 로직. 모두 `pytest.fail` RED 스켈레톤.
+
+---
+
+## 개발 명령
+
+```bash
+# RED (Track B)
+python -m pytest tests/entity/test_d_loc_01.py -v
+
+# RED (Track A)
+python -m pytest tests/boundary/ -v
+
+# 전체 (구현 후)
+pytest
+python -m unit_converter "meter:2.5"
+```
 
 ---
 
