@@ -15,3 +15,6 @@ class UnitRegistry:
 
     def get(self, name: str) -> float:
         return self._units[name]
+
+    def all_units(self) -> dict[str, float]:
+        return dict(self._units)
