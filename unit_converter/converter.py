@@ -12,13 +12,17 @@ from unit_converter.registry import UnitRegistry
 _default_registry = UnitRegistry()
 
 
+def _resolve_registry(registry: UnitRegistry | None) -> UnitRegistry:
+    return registry or _default_registry
+
+
 def to_meter(value: float, unit: str, registry: UnitRegistry | None = None) -> float:
-    reg = registry or _default_registry
+    reg = _resolve_registry(registry)
     return value * reg.get(unit)
 
 
 def from_meter(meter_value: float, unit: str, registry: UnitRegistry | None = None) -> float:
-    reg = registry or _default_registry
+    reg = _resolve_registry(registry)
     return meter_value / reg.get(unit)
 
 
@@ -26,7 +30,7 @@ def convert_all(
     parsed: ParsedInput,
     registry: UnitRegistry | None = None,
 ) -> list[ConversionResult]:
-    reg = registry or _default_registry
+    reg = _resolve_registry(registry)
     meter_value = to_meter(parsed.value, parsed.unit, reg)
     return [
         ConversionResult(

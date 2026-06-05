@@ -46,7 +46,7 @@ RED 스켈레톤 13건에 대해 **1 RED 묶음 = 1 커밋** 원칙으로 최소
 
 - [x] `python -m pytest tests/` → **13 passed**, exit code 0
 - [x] `Report/UnitConverter_1004_GREEN_Report.md` (본 문서)
-- [ ] **REFACTOR** — SRP/OCP smell 진단·정리 (다음 단계)
+- [ ] **REFACTOR** — SRP/OCP smell 진단·정리 → `Report/UnitConverter_1004_GoldenMaster_REFACTOR_Report.md` (P0+P1 완료)
 
 ---
 
@@ -104,9 +104,10 @@ unit_converter/
 
 | 우선순위 | 작업 | Skill/Command |
 |----------|------|---------------|
-| 1 | 코드 스멜 진단 (수정 없음) | `/refactor-smell` |
-| 2 | 선택 항목만 `src/` 리팩터, tests 동결 | `/refactor-safe` |
-| 3 | `staging` merge (사용자 요청 시) | git |
+| 1 | 코드 스멜 진단 (수정 없음) | `/refactor-smell` ✅ |
+| 2 | 선택 항목만 `src/` 리팩터, tests 동결 | `/refactor-safe` P0+P1 ✅ |
+| 3 | REFACTOR 보고 | `Report/UnitConverter_1004_GoldenMaster_REFACTOR_Report.md` v0.2 |
+| 4 | `staging` merge (사용자 요청 시) | git |
 
 REFACTOR 게이트: **pytest 13 passed 유지** · tests/ 수정 금지.
 
