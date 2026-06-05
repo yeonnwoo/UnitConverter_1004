@@ -184,6 +184,13 @@ python -m unit_converter "meter:2.5"
 - [ ] REFACTOR: 중복·책임 위반을 고쳤고 **테스트가 여전히 통과**한다
 - [ ] 커밋 메시지에 요구 ID 또는 SC 번호를 적었다
 
+**Dual-Track RED 완료 체크리스트** (전체 스켈레톤 마감 시)
+
+- [ ] Track A · Track B 설계표 ID 전부 스켈레톤 작성
+- [ ] `pytest.fail` only · assert/skip/xfail 없음
+- [ ] `pytest tests/` 전부 FAILED 확인
+- [ ] 상세: `Report/UnitConverter_1004_RED_Skeleton_Report.md` §2
+
 ---
 
 ## 부록: PRD 요구 ↔ 워크북 매핑
