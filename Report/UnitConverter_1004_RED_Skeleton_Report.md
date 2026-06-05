@@ -49,9 +49,9 @@ Dual-Track RED 설계표 기준으로 **Track A 4건 + Track B 5건** 스켈레�
 
 ### 다음 (RED 범위 밖)
 
-- [ ] **GREEN** — 1커밋 = RED 1묶음
+- [x] **GREEN** — 1커밋 = RED 1묶음 → `Report/UnitConverter_1004_GREEN_Report.md`
 - [ ] **REFACTOR** — SRP/OCP 유지
-- [ ] Git 커밋 (tests/, Report/, Prompting/)
+- [x] Git 커밋 (GREEN 10커밋, `GREEN` 브랜치)
 
 > ARRR 1사이클 체크리스트(RED/GREEN/REFACTOR)는 `docs/WORKBOOK.md` § Test Loop 참고.
 
