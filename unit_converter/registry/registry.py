@@ -1,4 +1,4 @@
-"""Unit registry.
+"""Unit registry implementation.
 
 Responsibility (SRP): store and retrieve unit definitions (meters per unit).
 Supports dynamic registration without modifying Converter (OCP).
