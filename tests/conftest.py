@@ -1,6 +1,13 @@
 """Shared pytest fixtures."""
 
+import sys
+from pathlib import Path
+
 import pytest
+
+_tests_root = Path(__file__).resolve().parent
+if str(_tests_root) not in sys.path:
+    sys.path.insert(0, str(_tests_root))
 
 from tests.entity.constants import G1_CASE_COUNT, G1_GRID_COLS, G1_GRID_ROWS
 
